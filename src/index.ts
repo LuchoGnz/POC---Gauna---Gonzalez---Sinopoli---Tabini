@@ -66,6 +66,20 @@ app.get("/api/empresas", async (req: Request, res: Response) => {
   }
 });
 
+// Endpoint para eliminar teléfono
+import { eq } from 'drizzle-orm';
+
+app.delete("/api/phones/:id", async (req: Request, res: Response) => {
+  const { id } = req.params;
+  try {
+    await db.delete(phonesTable).where(eq(phonesTable.id, Number(id)));
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, error: "Error eliminando teléfono" });
+  }
+});
+
 // ------------------ Seed inicial ------------------
 async function seedDB() {
   //await db.delete(phonesTable);  borra todos los registros

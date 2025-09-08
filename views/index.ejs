@@ -105,21 +105,19 @@
         <th onclick="sortTable(1)">Precio &#x25B2;&#x25BC;</th>
         <th onclick="sortTable(2)">Stock &#x25B2;&#x25BC;</th>
         <th onclick="sortTable(3)">Empresa &#x25B2;&#x25BC;</th>
+        <th>Eliminar</th>
       </tr>
     </thead>
     <tbody>
       <% phones.forEach(u=> { %>
-        <tr>
+        <tr data-id="<%= u.id %>">
+          <td><%= u.name %></td>
+          <td>$<%= u.price %></td>
+          <td><%= u.stock %></td>
+          <td><%= u.empresa %></td>
           <td>
-            <%= u.name %>
+            <button class="delete-btn">Eliminar</button>
           </td>
-          <td>$<%= u.price %>
-          </td>
-          <td>
-            <%= u.stock %>
-          </td>
-          <td>
-            <%= u.empresa %>
         </tr>
         <% }) %>
     </tbody>
@@ -173,14 +171,15 @@
         // Obtener la referencia al tbody de la tabla
         const tableBody = document.getElementById("phoneTable").getElementsByTagName("tbody")[0];
         const newRow = tableBody.insertRow();
+        newRow.setAttribute("data-id", data.phone.id); // Usa el id devuelto por el backend
 
-        // Agregar la fila con los datos del nuevo teléfono
         newRow.innerHTML = `
-        <td>${name}</td>
-        <td>$${price}</td>
-        <td>${stock}</td>
-        <td>${empresa}</td>
-      `;
+          <td>${name}</td>
+          <td>$${price}</td>
+          <td>${stock}</td>
+          <td>${empresa}</td>
+          <td><button class="delete-btn">Eliminar</button></td>
+        `;
 
         // Limpiar el formulario
         document.getElementById("addPhoneForm").reset();
@@ -244,6 +243,28 @@
     }
   }
     window.addEventListener("DOMContentLoaded", cargarEmpresas);
+</script>
+
+<script>
+  document.addEventListener("click", async function (e) {
+    if (e.target.classList.contains("delete-btn")) {
+      const row = e.target.closest("tr");
+      const id = row.getAttribute("data-id");
+      if (confirm("¿Seguro que deseas eliminar este teléfono?")) {
+        try {
+          const res = await fetch(`/api/phones/${id}`, { method: "DELETE" });
+          const data = await res.json();
+          if (data.success) {
+            row.remove();
+          } else {
+            alert("Error al eliminar");
+          }
+        } catch (err) {
+          alert("Error de conexión");
+        }
+      }
+    }
+  });
 </script>
 </body>
 
