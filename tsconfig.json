@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "CommonJS",
+    "esModuleInterop": true,
+    "moduleResolution": "Node",
+    "strict": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+
+    "noImplicitAny": true,       // obliga a declarar tipos, evita TS7006
+    "outDir": "./dist",          // carpeta de salida de JS compilado
+    "rootDir": "./src",          // carpeta de archivos TS
+    "resolveJsonModule": true    // permite importar JSON si hace falta
+  },
+  "include": ["src/**/*"]
+}

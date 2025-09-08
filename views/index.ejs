@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Stock</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #123D5F;
+      color: #A7B6B5;
+      margin: 0;
+      padding: 40px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    h1,
+    h2 {
+      color: #ffffff;
+      margin-bottom: 20px;
+      font-weight: normal;
+    }
+
+    #search {
+      padding: 10px 14px;
+      margin-bottom: 20px;
+      border-radius: 6px;
+      border: 1px solid #476678;
+      background: #152E56;
+      color: #ffffff;
+      width: 60%;
+      max-width: 400px;
+      outline: none;
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 70%;
+      max-width: 800px;
+      background: #152E56;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+    }
+
+    th,
+    td {
+      padding: 12px 16px;
+      text-align: left;
+    }
+
+    th {
+      background: #476678;
+      color: #ffffff;
+      font-weight: bold;
+      cursor: pointer;
+      /* manito al pasar sobre encabezados */
+      user-select: none;
+    }
+
+    tr:nth-child(even) {
+      background: #1d3b66;
+    }
+
+    tr:hover {
+      background: #2b4b73;
+      transition: background 0.2s ease;
+    }
+
+    td {
+      border-bottom: 1px solid #476678;
+    }
+
+    /* Cursor pointer para el botón Agregar */
+    #addPhoneForm button {
+      cursor: pointer;
+      padding: 8px 14px;
+      border: none;
+      border-radius: 6px;
+      background-color: #476678;
+      color: #fff;
+      font-weight: bold;
+      margin-top: 10px;
+    }
+
+    #addPhoneForm button:hover {
+      background-color: #3a5662;
+    }
+  </style>
+</head>
+
+<body>
+
+  <h1>📱 Lista de Teléfonos</h1>
+
+  <!-- Buscador -->
+  <input type="text" id="search" placeholder="🔍 Buscar teléfono o empresa...">
+
+  <table id="phoneTable">
+    <thead>
+      <tr>
+        <th onclick="sortTable(0)">Nombre &#x25B2;&#x25BC;</th>
+        <th onclick="sortTable(1)">Precio &#x25B2;&#x25BC;</th>
+        <th onclick="sortTable(2)">Stock &#x25B2;&#x25BC;</th>
+        <th onclick="sortTable(3)">Empresa &#x25B2;&#x25BC;</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% Phones.forEach(u=> { %>
+        <tr>
+          <td>
+            <%= u.name %>
+          </td>
+          <td>$<%= u.price %>
+          </td>
+          <td>
+            <%= u.stock %>
+          </td>
+          <td>
+            <%= u.empresa %>
+        </tr>
+        <% }) %>
+    </tbody>
+  </table>
+
+  <script>
+    const searchInput = document.getElementById('search');
+    const table = document.getElementById('phoneTable');
+    const rows = table.getElementsByTagName('tr');
+
+    searchInput.addEventListener('keyup', function () {
+      const filter = searchInput.value.toLowerCase();
+      for (let i = 1; i < rows.length; i++) { // empieza en 1 para saltar <thead>
+        let rowText = rows[i].textContent.toLowerCase();
+        rows[i].style.display = rowText.includes(filter) ? '' : 'none';
+      }
+    });
+  </script>
+
+  <h2>➕ Agregar Teléfono</h2>
+  <form id="addPhoneForm">
+    <input type="text" id="name" placeholder="Nombre" required>
+    <input type="number" id="price" placeholder="Precio" required>
+    <input type="number" id="stock" placeholder="Stock" required>
+    <select id="empresa" required>
+      <option value="" disabled selected>Seleccione empresa</option>
+    </select>
+
+    <button type="submit">Agregar</button>
+  </form>
+
+<script>
+  document.getElementById("addPhoneForm").addEventListener("submit", async function (e) {
+    e.preventDefault();
+
+    const name = document.getElementById("name").value;
+    const price = document.getElementById("price").value;
+    const stock = document.getElementById("stock").value;
+    const empresa = document.getElementById("empresa").value;
+
+    try {
+      const response = await fetch("/api/phones", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, price, stock, empresa })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Obtener la referencia al tbody de la tabla
+        const tableBody = document.getElementById("phoneTable").getElementsByTagName("tbody")[0];
+        const newRow = tableBody.insertRow();
+
+        // Agregar la fila con los datos del nuevo teléfono
+        newRow.innerHTML = `
+        <td>${name}</td>
+        <td>$${price}</td>
+        <td>${stock}</td>
+        <td>${empresa}</td>
+      `;
+
+        // Limpiar el formulario
+        document.getElementById("addPhoneForm").reset();
+      } else {
+        alert("Error al guardar en la DB");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Error en la conexión con el servidor");
+    }
+  });
+</script>
+
+  <script>
+    let sortDirections = []; // para recordar ascendente o descendente por columna
+
+    function sortTable(columnIndex) {
+      const table = document.getElementById("phoneTable").getElementsByTagName("tbody")[0];
+      const rows = Array.from(table.rows);
+
+      if (sortDirections[columnIndex] === undefined) sortDirections[columnIndex] = true;
+      const ascending = sortDirections[columnIndex];
+
+      rows.sort((a, b) => {
+        let valA = a.cells[columnIndex].innerText;
+        let valB = b.cells[columnIndex].innerText;
+
+        if (columnIndex === 1 || columnIndex === 2) {
+          valA = parseFloat(valA.replace('$', ''));
+          valB = parseFloat(valB.replace('$', ''));
+        }
+
+        if (valA < valB) return ascending ? -1 : 1;
+        if (valA > valB) return ascending ? 1 : -1;
+        return 0;
+      });
+
+      table.innerHTML = "";
+      rows.forEach(row => table.appendChild(row));
+      sortDirections[columnIndex] = !ascending;
+    }
+  </script>
+
+
+<script>
+  // Cargar empresas al iniciar
+  async function cargarEmpresas() {
+    const selectEmpresa = document.getElementById("empresa");
+    try {
+      const res = await fetch("/api/empresas");
+      const empresas = await res.json();
+
+      empresas.forEach(emp => {
+        const option = document.createElement("option");
+        option.value = emp.name;
+        option.textContent = emp.name;
+        selectEmpresa.appendChild(option);
+      });
+    } catch (err) {
+      console.error("Error cargando empresas:", err);
+    }
+  }
+    window.addEventListener("DOMContentLoaded", cargarEmpresas);
+</script>
+</body>
+
+</html>
