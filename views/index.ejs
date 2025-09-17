@@ -56,7 +56,6 @@
       color: #ffffff;
       font-weight: bold;
       cursor: pointer;
-      /* manito al pasar sobre encabezados */
       user-select: none;
     }
 
@@ -73,7 +72,6 @@
       border-bottom: 1px solid #476678;
     }
 
-    /* Cursor pointer para el botón Agregar */
     #addPhoneForm button {
       cursor: pointer;
       padding: 8px 14px;
@@ -111,10 +109,17 @@
     <tbody>
       <% phones.forEach(u=> { %>
         <tr data-id="<%= u.id %>">
-          <td><%= u.name %></td>
-          <td>$<%= u.price %></td>
-          <td><%= u.stock %></td>
-          <td><%= u.empresa %></td>
+          <td>
+            <%= u.name %>
+          </td>
+          <td>$<%= u.price %>
+          </td>
+          <td>
+            <%= u.stock %>
+          </td>
+          <td>
+            <%= u.empresa %>
+          </td>
           <td>
             <button class="delete-btn">Eliminar</button>
           </td>
@@ -125,14 +130,30 @@
 
   <script>
     const searchInput = document.getElementById('search');
-    const table = document.getElementById('phoneTable');
-    const rows = table.getElementsByTagName('tr');
 
-    searchInput.addEventListener('keyup', function () {
-      const filter = searchInput.value.toLowerCase();
-      for (let i = 1; i < rows.length; i++) { // empieza en 1 para saltar <thead>
-        let rowText = rows[i].textContent.toLowerCase();
-        rows[i].style.display = rowText.includes(filter) ? '' : 'none';
+    searchInput.addEventListener('keyup', async function () {
+      const filter = searchInput.value;
+
+      try {
+        const res = await fetch(`/api/phones/search?q=${encodeURIComponent(filter)}`);
+        const phones = await res.json();
+
+        const tableBody = document.getElementById("phoneTable").getElementsByTagName("tbody")[0];
+        tableBody.innerHTML = ""; // vaciamos la tabla
+
+        phones.forEach(u => {
+          const row = tableBody.insertRow();
+          row.setAttribute("data-id", u.id);
+          row.innerHTML = `
+            <td>${u.name}</td>
+            <td>$${u.price}</td>
+            <td>${u.stock}</td>
+            <td>${u.empresa}</td>
+            <td><button class="delete-btn">Eliminar</button></td>
+          `;
+        });
+      } catch (err) {
+        console.error("Error buscando teléfonos:", err);
       }
     });
   </script>
@@ -149,52 +170,50 @@
     <button type="submit">Agregar</button>
   </form>
 
-<script>
-  document.getElementById("addPhoneForm").addEventListener("submit", async function (e) {
-    e.preventDefault();
+  <script>
+    document.getElementById("addPhoneForm").addEventListener("submit", async function (e) {
+      e.preventDefault();
 
-    const name = document.getElementById("name").value;
-    const price = document.getElementById("price").value;
-    const stock = document.getElementById("stock").value;
-    const empresa = document.getElementById("empresa").value;
+      const name = document.getElementById("name").value;
+      const price = document.getElementById("price").value;
+      const stock = document.getElementById("stock").value;
+      const empresa = document.getElementById("empresa").value;
 
-    try {
-      const response = await fetch("/api/phones", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, price, stock, empresa })
-      });
+      try {
+        const response = await fetch("/api/phones", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, price, stock, empresa })
+        });
 
-      const data = await response.json();
+        const data = await response.json();
 
-      if (data.success) {
-        // Obtener la referencia al tbody de la tabla
-        const tableBody = document.getElementById("phoneTable").getElementsByTagName("tbody")[0];
-        const newRow = tableBody.insertRow();
-        newRow.setAttribute("data-id", data.phone.id); // Usa el id devuelto por el backend
+        if (data.success) {
+          const tableBody = document.getElementById("phoneTable").getElementsByTagName("tbody")[0];
+          const newRow = tableBody.insertRow();
+          newRow.setAttribute("data-id", data.phone.id);
 
-        newRow.innerHTML = `
-          <td>${name}</td>
-          <td>$${price}</td>
-          <td>${stock}</td>
-          <td>${empresa}</td>
-          <td><button class="delete-btn">Eliminar</button></td>
-        `;
+          newRow.innerHTML = `
+            <td>${name}</td>
+            <td>$${price}</td>
+            <td>${stock}</td>
+            <td>${empresa}</td>
+            <td><button class="delete-btn">Eliminar</button></td>
+          `;
 
-        // Limpiar el formulario
-        document.getElementById("addPhoneForm").reset();
-      } else {
-        alert("Error al guardar en la DB");
+          document.getElementById("addPhoneForm").reset();
+        } else {
+          alert("Error al guardar en la DB");
+        }
+      } catch (err) {
+        console.error(err);
+        alert("Error en la conexión con el servidor");
       }
-    } catch (err) {
-      console.error(err);
-      alert("Error en la conexión con el servidor");
-    }
-  });
-</script>
+    });
+  </script>
 
   <script>
-    let sortDirections = []; // para recordar ascendente o descendente por columna
+    let sortDirections = [];
 
     function sortTable(columnIndex) {
       const table = document.getElementById("phoneTable").getElementsByTagName("tbody")[0];
@@ -223,49 +242,47 @@
     }
   </script>
 
+  <script>
+    async function cargarEmpresas() {
+      const selectEmpresa = document.getElementById("empresa");
+      try {
+        const res = await fetch("/api/empresas");
+        const empresas = await res.json();
 
-<script>
-  // Cargar empresas al iniciar
-  async function cargarEmpresas() {
-    const selectEmpresa = document.getElementById("empresa");
-    try {
-      const res = await fetch("/api/empresas");
-      const empresas = await res.json();
-
-      empresas.forEach(emp => {
-        const option = document.createElement("option");
-        option.value = emp.name;
-        option.textContent = emp.name;
-        selectEmpresa.appendChild(option);
-      });
-    } catch (err) {
-      console.error("Error cargando empresas:", err);
-    }
-  }
-    window.addEventListener("DOMContentLoaded", cargarEmpresas);
-</script>
-
-<script>
-  document.addEventListener("click", async function (e) {
-    if (e.target.classList.contains("delete-btn")) {
-      const row = e.target.closest("tr");
-      const id = row.getAttribute("data-id");
-      if (confirm("¿Seguro que deseas eliminar este teléfono?")) {
-        try {
-          const res = await fetch(`/api/phones/${id}`, { method: "DELETE" });
-          const data = await res.json();
-          if (data.success) {
-            row.remove();
-          } else {
-            alert("Error al eliminar");
-          }
-        } catch (err) {
-          alert("Error de conexión");
-        }
+        empresas.forEach(emp => {
+          const option = document.createElement("option");
+          option.value = emp.name;
+          option.textContent = emp.name;
+          selectEmpresa.appendChild(option);
+        });
+      } catch (err) {
+        console.error("Error cargando empresas:", err);
       }
     }
-  });
-</script>
+    window.addEventListener("DOMContentLoaded", cargarEmpresas);
+  </script>
+
+  <script>
+    document.addEventListener("click", async function (e) {
+      if (e.target.classList.contains("delete-btn")) {
+        const row = e.target.closest("tr");
+        const id = row.getAttribute("data-id");
+        if (confirm("¿Seguro que deseas eliminar este teléfono?")) {
+          try {
+            const res = await fetch(`/api/phones/${id}`, { method: "DELETE" });
+            const data = await res.json();
+            if (data.success) {
+              row.remove();
+            } else {
+              alert("Error al eliminar");
+            }
+          } catch (err) {
+            alert("Error de conexión");
+          }
+        }
+      }
+    });
+  </script>
 </body>
 
 </html>

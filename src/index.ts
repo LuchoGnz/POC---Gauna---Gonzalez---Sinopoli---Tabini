@@ -1,10 +1,11 @@
 import 'dotenv/config';
 import express, { Request, Response } from "express";
 import bodyParser from "body-parser";
+import { Pool } from "pg";
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { phonesTable, phonesInsert, empresasTable, empresasInsert } from './db/schema';
 import * as schema from './db/schema';
-import { Pool } from "pg";
+import { or, like} from "drizzle-orm";
 
 // ------------------ Configuración DB ------------------
 const pool = new Pool({
@@ -78,12 +79,37 @@ app.delete("/api/phones/:id", async (req: Request, res: Response) => {
     console.error(err);
     res.status(500).json({ success: false, error: "Error eliminando teléfono" });
   }
+})
+
+// Endpoint para buscar teléfonos
+app.get("/api/phones/search", async (req: Request, res: Response) => {
+  const { q } = req.query;
+
+  try {
+    let results;
+    if (!q || typeof q !== "string" || q.trim() === "") {
+      results = await db.select().from(phonesTable); // todos
+    } else {
+      results = await db
+        .select()
+        .from(phonesTable)
+        .where(
+          or(
+            like(phonesTable.name, `%${q}%`),
+            like(phonesTable.empresa, `%${q}%`)
+          )
+        );
+    }
+
+    res.json(results);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Error buscando teléfonos" });
+  }
 });
 
-// ------------------ Seed inicial ------------------
+
 async function seedDB() {
-  //await db.delete(phonesTable);  borra todos los registros
-  // Seed de teléfonos
   const countPhones = await db.select().from(phonesTable).limit(1);
   if (countPhones.length === 0) {
     const newPhones: phonesInsert[] = [
