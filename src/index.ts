@@ -5,7 +5,7 @@ import { Pool } from "pg";
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { phonesTable, phonesInsert, empresasTable, empresasInsert } from './db/schema';
 import * as schema from './db/schema';
-import { or, like} from "drizzle-orm";
+import { or, like, eq} from "drizzle-orm";
 
 // ------------------ Configuración DB ------------------
 const pool = new Pool({
@@ -68,7 +68,6 @@ app.get("/api/empresas", async (req: Request, res: Response) => {
 });
 
 // Endpoint para eliminar teléfono
-import { eq } from 'drizzle-orm';
 
 app.delete("/api/phones/:id", async (req: Request, res: Response) => {
   const { id } = req.params;
